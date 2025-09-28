@@ -1,0 +1,149 @@
+''' 
+    Instruction by Ujjwal Gupta, for local testing in directory,
+    uncomment everything in this file. [Make sure to have have the image in the same directory]
+    Run the file and open the browser to the localhost address.
+    To test the API, use the following code:
+
+    pip install -r requirements.txt
+    
+    run command: gunicorn main:app
+
+    [for testing purposes] to input the image, use the following code in new terminal: 
+    
+    curl -X POST http://127.0.0.1:8080/process_image \ -F "image=@test.jpg"
+
+    [make sure to have the image in the same directory]
+
+'''
+import cv2
+import numpy as np
+import mediapipe as mp
+from deepface import DeepFace
+from flask import Flask, request, jsonify
+from flask_restful import Api, Resource
+import base64
+import requests
+# import os
+# from datetime import datetime
+
+app = Flask(__name__)
+api = Api(app)
+
+# OUTPUT_DIR = "processed_images"
+# os.makedirs(OUTPUT_DIR, exist_ok=True)
+
+mp_face_mesh = mp.solutions.face_mesh
+face_mesh = mp_face_mesh.FaceMesh(static_image_mode=True, min_detection_confidence=0.5)
+
+EMOTION_MAP = {
+    "angry": -2,
+    "sad": -1,
+    "neutral": 0,
+    "happy": 2
+}
+
+EYE_INDICES = [33, 133, 362, 263, 7, 8, 9, 10, 226, 445]
+LIP_INDICES = [61, 185, 40, 39, 37, 267, 269, 270, 409]
+FACE_EDGES = [1, 4, 234, 454, 152]
+
+class MoodAnalyzer:
+    def analyze_emotions(self, image: np.ndarray) -> int:
+        try:
+            rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+            result = DeepFace.analyze(rgb_image, actions=['emotion'], enforce_detection=False)
+            detected_emotion = result[0]['dominant_emotion'].lower()  
+            return EMOTION_MAP.get(detected_emotion, 0)
+        except Exception as e:  
+            print(f"Error in emotion analysis: {str(e)}")
+            return 0
+
+mood_analyzer = MoodAnalyzer()
+
+def draw_vectors(image, points, indices, color, thickness=2):
+    """Draw connecting lines between facial landmark points"""
+    for i in range(len(indices) - 1):
+        p1 = points[indices[i]]
+        p2 = points[indices[i+1]]
+        cv2.line(image, p1, p2, color, thickness)
+
+# def save_processed_image(image):
+#     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+#     filename = f"processed_image_{timestamp}.jpg"
+#     filepath = os.path.join(OUTPUT_DIR, filename)
+#     cv2.imwrite(filepath, image)
+#     return filepath
+
+class ProcessImage(Resource):
+    def post(self):
+        try:
+            # Check if file is uploaded
+            if 'image' in request.files:
+                # Handle file upload
+                file = request.files['image']
+                if file.filename == '':
+                    return jsonify({"error": "No file selected"}), 400
+                
+                # Read file content
+                file_content = file.read()
+                image_np = np.frombuffer(file_content, np.uint8)
+                image = cv2.imdecode(image_np, cv2.IMREAD_COLOR)
+                
+            else:
+                # Check if URL is provided
+                image_url = request.json.get('image_url') if request.json else None
+                
+                if not image_url:
+                    return jsonify({"error": "No image file or URL provided"}), 400
+                    
+                # Fetch image from URL
+                response = requests.get(image_url)
+                if response.status_code != 200:
+                    return jsonify({"error": "Failed to retrieve image from URL"}), 400
+                
+                # Convert image content to numpy array
+                image_np = np.frombuffer(response.content, np.uint8)
+                image = cv2.imdecode(image_np, cv2.IMREAD_COLOR)
+            
+            if image is None:
+                return jsonify({"error": "Invalid image file"}), 400
+
+            # Process the image
+            rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+            emotion_numeric = mood_analyzer.analyze_emotions(image)
+            
+            results = face_mesh.process(rgb_image) if emotion_numeric != 0 else None
+            
+            if results and results.multi_face_landmarks:
+                for face_landmarks in results.multi_face_landmarks:
+                    points = []
+                    for landmark in face_landmarks.landmark:
+                        x = int(landmark.x * image.shape[1])
+                        y = int(landmark.y * image.shape[0])
+                        points.append((x, y))
+                        # Draw red dots for facial landmarks
+                        cv2.circle(image, (x, y), 2, (0, 0, 255), -1)
+                    
+                    # Draw vectors with different colors
+                    # Blue lines for eyes
+                    draw_vectors(image, points, EYE_INDICES, (255, 0, 0), 2)
+                    # Green lines for lips  
+                    draw_vectors(image, points, LIP_INDICES, (0, 255, 0), 2)
+                    # Purple lines for face edges
+                    draw_vectors(image, points, FACE_EDGES, (255, 0, 255), 2)
+            
+            # Encode image to base64
+            _, buffer = cv2.imencode('.jpg', image)
+            image_base64 = base64.b64encode(buffer).decode('utf-8')
+            
+            return jsonify({
+                "emotion_numeric": emotion_numeric,
+                "image_base64": image_base64
+            })
+
+        except Exception as e:
+            return jsonify({"error": f"Error processing image: {str(e)}"}), 500
+
+api.add_resource(ProcessImage, '/process_image')
+
+if __name__ == '__main__':
+    app.run(debug=True)

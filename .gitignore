@@ -87,3 +87,7 @@ VirtualDakota/*.sln
 VirtualDakota/*.userprefs
 VirtualDakota/Assets/Avatars/Models/**/*.fbx
 VirtualDakota/Assets/Avatars/Models/*.fbx
+
+# Unity WebGL build output (drop compiled files locally only)
+public/webgl/Build/
+public/webgl/TemplateData/

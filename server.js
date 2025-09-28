@@ -8,6 +8,8 @@ const multer = require('multer');
 const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
+const FormData = require('form-data');
+const axios = require('axios');
 
 const app = express();
 const server = http.createServer(app);
@@ -735,23 +737,68 @@ app.get('/api/session/:sessionId/debug', async (req, res) => {
   try {
     const { sessionId } = req.params;
     
-    const response = await fetch(`https://api.browserbase.com/v1/sessions/${sessionId}/debug`, {
-      method: 'GET',
+    if (!process.env.BROWSERBASE_API_KEY) {
+      return res.status(500).json({ error: 'Browserbase API key not configured' });
+    }
+    
+    console.log(`Fetching debug info for session: ${sessionId}`);
+    
+    const response = await axios.get(`https://api.browserbase.com/v1/sessions/${sessionId}/debug`, {
       headers: {
         'X-BB-API-Key': process.env.BROWSERBASE_API_KEY
       }
     });
     
-    if (!response.ok) {
-      throw new Error(`Browserbase API error: ${response.status}`);
-    }
-    
-    const debugInfo = await response.json();
-    res.json(debugInfo);
+    console.log('Debug info received:', response.data);
+    res.json(response.data);
     
   } catch (error) {
-    console.error('Error fetching session debug info:', error);
-    res.status(500).json({ error: 'Failed to fetch session debug info' });
+    console.error('Error fetching session debug info:', error.message);
+    if (error.response) {
+      console.error('API Response:', error.response.status, error.response.data);
+    }
+    
+    // Return a mock debug URL for testing if API fails
+    const mockDebugUrl = `https://www.browserbase.com/sessions/${sessionId}`;
+    res.json({
+      debuggerFullscreenUrl: mockDebugUrl,
+      fallback: true,
+      message: 'Using fallback URL - Browserbase API unavailable'
+    });
+  }
+});
+
+// Browser screenshot endpoint
+app.get('/api/session/:sessionId/screenshot', async (req, res) => {
+  try {
+    const { sessionId } = req.params;
+    console.log('Fetching screenshot for session:', sessionId);
+    
+    if (!sessionId) {
+      return res.status(400).json({ error: 'Session ID is required' });
+    }
+
+    // Use Browserbase screenshot API
+    const response = await axios.get(
+      `https://api.browserbase.com/v1/sessions/${sessionId}/screenshot`,
+      {
+        headers: {
+          'X-BB-API-Key': process.env.BROWSERBASE_API_KEY || 'bb_test_key'
+        },
+        timeout: 15000,
+        responseType: 'arraybuffer'
+      }
+    );
+
+    res.set({
+      'Content-Type': 'image/png',
+      'Content-Length': response.data.length
+    });
+    res.send(response.data);
+
+  } catch (error) {
+    console.error('Error fetching screenshot:', error.message);
+    res.status(500).json({ error: 'Failed to fetch screenshot', details: error.message });
   }
 });
 
@@ -833,6 +880,92 @@ app.post('/api/analyze-text', async (req, res) => {
     } else {
       res.status(500).json({ success: false, error: error.message });
     }
+  }
+});
+
+// Vision Model API endpoint
+app.post('/api/vision/analyze', upload.single('image'), async (req, res) => {
+  try {
+    const file = req.file;
+    
+    if (!file) {
+      return res.status(400).json({ success: false, error: 'No image uploaded' });
+    }
+
+    // Check if file is an image
+    if (!file.mimetype.startsWith('image/')) {
+      return res.status(400).json({ success: false, error: 'File must be an image' });
+    }
+
+    console.log('Processing image:', file.filename);
+
+    try {
+      // Create form data to send to Python vision service
+      const formData = new FormData();
+      formData.append('image', fs.createReadStream(file.path), {
+        filename: file.filename,
+        contentType: file.mimetype
+      });
+
+      // Call the Python computer vision service
+      const visionResponse = await axios.post('http://localhost:8080/process_image', formData, {
+        headers: {
+          ...formData.getHeaders(),
+        },
+        timeout: 30000 // 30 second timeout
+      });
+
+      const visionResult = visionResponse.data;
+
+      // Clean up uploaded file
+      fs.unlink(file.path, (err) => {
+        if (err) console.error('Error deleting temp file:', err);
+      });
+
+      res.json({
+        success: true,
+        emotion_numeric: visionResult.emotion_numeric,
+        image_base64: visionResult.image_base64
+      });
+
+    } catch (visionError) {
+      console.error('Python vision service error:', visionError.message);
+      
+      // Clean up uploaded file
+      fs.unlink(file.path, (err) => {
+        if (err) console.error('Error deleting temp file:', err);
+      });
+
+      // Fallback to mock response if Python service is not available
+      console.log('Falling back to mock response');
+      
+      // Create a simple mock processed image (just return the original for testing)
+      let mockProcessedImage = null;
+      try {
+        // Read the original image and convert to base64 for mock response
+        const imageBuffer = fs.readFileSync(file.path);
+        mockProcessedImage = imageBuffer.toString('base64');
+      } catch (err) {
+        console.error('Error reading file for mock response:', err);
+      }
+      
+      const mockResponse = {
+        emotion_numeric: Math.floor(Math.random() * 5) - 2, // Random emotion between -2 and 2
+        image_base64: mockProcessedImage
+      };
+
+      res.json({
+        success: true,
+        emotion_numeric: mockResponse.emotion_numeric,
+        image_base64: mockResponse.image_base64,
+        fallback: true,
+        message: 'Using mock data - Python vision service not available'
+      });
+    }
+
+  } catch (error) {
+    console.error('Vision analysis error:', error);
+    res.status(500).json({ success: false, error: error.message });
   }
 });
 

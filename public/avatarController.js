@@ -10,8 +10,7 @@
     isTyping: false,
     isSpeaking: false,
     queuedOneShot: null,
-    currentLoop: 'Sitting_Talking', // default loop per spec
-    fallbackIdle: 'Sitting_Idle',
+    currentLoop: 'Sitting_Talking', // ambient default
     active: true,
     unityObject: 'AvatarControllerRoot',
     debug: true
@@ -61,7 +60,7 @@
       playLoop('Sitting_Talking');
       return;
     }
-    playLoop(state.fallbackIdle);
+    playLoop('Sitting_Talking');
   }
 
   const api = {

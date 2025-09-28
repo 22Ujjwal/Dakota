@@ -32,6 +32,51 @@
                     </div>
                 </div>
 
+                <div class="vision-panel" id="visionPanel" role="region" aria-hidden="true" aria-labelledby="visionPanelTitle">
+                    <div class="vision-panel-content">
+                        <div class="vision-panel-header">
+                            <span class="vision-panel-title" id="visionPanelTitle">Vision Analysis</span>
+                            <button type="button" class="vision-close-btn" id="visionCloseBtn" aria-label="Close vision panel">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                        <div class="vision-sections">
+                            <div class="camera-section">
+                                <h4>Camera</h4>
+                                <div class="camera-rectangle" id="cameraRectangle">
+                                    <video id="cameraVideo" autoplay muted style="display: none;"></video>
+                                    <canvas id="captureCanvas" style="display: none;"></canvas>
+                                    <div class="camera-placeholder" id="cameraPlaceholder">
+                                        <i class="fas fa-video"></i>
+                                        <span>Starting camera...</span>
+                                    </div>
+                                </div>
+                                <div class="camera-controls">
+                                    <button class="btn glassmorphic-button" id="captureBtn" disabled>
+                                        <i class="fas fa-camera"></i>
+                                    </button>
+                                    <button class="btn glassmorphic-button" id="uploadImageBtn">
+                                        <i class="fas fa-upload"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="analysis-section">
+                                <h4>Analysis</h4>
+                                <div class="analysis-rectangle" id="analysisRectangle">
+                                    <div class="analysis-results" id="analysisResults">
+                                        <div class="results-placeholder">
+                                            <i class="fas fa-brain"></i>
+                                            <span>AI Vision Analysis</span>
+                                            <p>Results will appear here</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <input type="file" id="imageUpload" accept="image/*" style="display: none;">
+                    </div>
+                </div>
+
                 <div class="sidebar-logo-row">
                     <div class="logo">
                         <div class="logo-icon">
@@ -43,18 +88,36 @@
                         <i class="far fa-user"></i>
                     </button>
                 </div>
-
-                <button class="new-chat-btn glassmorphic-button" id="newChatBtn">
-                    <i class="fas fa-plus"></i>
-                    <span class="btn-text">New Chat</span>
-                </button>
             </div>
             
             <div class="sidebar-content">
-                <div class="chat-history">
-                    <div class="history-item active">
-                        <i class="far fa-comment-dots"></i>
-                        <span>Current Session</span>
+                <div class="sidebar-activity-section">
+                    <div class="activity-status glassmorphic-panel" id="activityContainer">
+                        <div class="activity-current">
+                            <span class="activity-text">Ready to help</span>
+                            <button class="activity-toggle" onclick="toggleActivityDropdown()">
+                                <i class="fas fa-chevron-down"></i>
+                            </button>
+                        </div>
+                        <div class="activity-dropdown" id="activityDropdown" style="display: none;">
+                            <!-- Activity items will be populated here -->
+                        </div>
+                    </div>
+                </div>
+
+                <div class="sidebar-history-section">
+                    <div class="history-controls">
+                        <div class="history-item active current-session-pill">
+                            <i class="far fa-comment-dots"></i>
+                            <span>Current Session</span>
+                        </div>
+                        <button class="new-chat-btn glassmorphic-button" id="newChatBtn">
+                            <i class="fas fa-plus"></i>
+                            <span class="btn-text">New Chat</span>
+                        </button>
+                    </div>
+                    <div class="chat-history" id="chatHistoryList">
+                        <!-- Additional history items will appear here -->
                     </div>
                 </div>
                 
@@ -63,6 +126,10 @@
                         <div class="status-dot" id="connectionStatus"></div>
                         <span id="statusText">Connected</span>
                     </div>
+                    <button class="vision-slide-toggle glassmorphic-button" id="visionSlideToggle" aria-label="Toggle vision panel" aria-controls="visionPanel" aria-expanded="false">
+                        <i class="fas fa-eye"></i>
+                        <span class="btn-text">Vision</span>
+                    </button>
                 </div>
             </div>
         </aside>
@@ -91,19 +158,6 @@
                 </div>
             </header>
 
-            <!-- Activity Status (Minimal) -->
-            <div class="activity-status glassmorphic-panel" id="activityContainer">
-                <div class="activity-current">
-                    <span class="activity-text">Ready to help</span>
-                    <button class="activity-toggle" onclick="toggleActivityDropdown()">
-                        <i class="fas fa-chevron-down"></i>
-                    </button>
-                </div>
-                <div class="activity-dropdown" id="activityDropdown" style="display: none;">
-                    <!-- Activity items will be populated here -->
-                </div>
-            </div>
-
             <!-- Chat Messages -->
             <div class="chat-messages" id="chatMessages">
             </div>
@@ -112,10 +166,18 @@
             <div class="chat-input-container glassmorphic-panel">
                 <div class="input-wrapper">
                     <div class="input-container">
-                        <input type="text" id="chatInput" placeholder="Message Dakota..." autocomplete="off" spellcheck="false" />
-                        <button class="send-button glassmorphic-button" id="sendMessage">
-                            <i class="far fa-paper-plane"></i>
-                        </button>
+                        <textarea id="chatInput" placeholder="Message Dakota..." autocomplete="off" spellcheck="false" rows="1"></textarea>
+                        <div class="input-actions">
+                            <button class="voice-input-button glassmorphic-button" id="voiceInputBtn" title="Voice Input">
+                                <i class="fas fa-microphone"></i>
+                            </button>
+                            <button class="voice-output-button glassmorphic-button" id="voiceOutputBtn" title="Toggle Voice Responses">
+                                <i class="fas fa-volume-up"></i>
+                            </button>
+                            <button class="send-button glassmorphic-button" id="sendMessage">
+                                <i class="far fa-paper-plane"></i>
+                            </button>
+                        </div>
                     </div>
                     
                 </div>
@@ -151,6 +213,8 @@
                 </div>
             </div>
         </div>
+
+
 
         <!-- Browser View Modal -->
         <div class="browser-modal glassmorphic-overlay" id="browserModal">
@@ -201,5 +265,56 @@
     <!-- Scripts -->
     <script src="/socket.io/socket.io.js"></script>
     <script src="script.js"></script>
+    <script>
+        (function() {
+            const canvas = document.getElementById('avatarCanvas');
+            if (!canvas) {
+                return;
+            }
+
+            const placeholder = document.getElementById('avatarPlaceholder');
+            const buildBasePath = 'webgl/Build';
+            const fileBase = 'vdokota';
+            const loaderUrl = `${buildBasePath}/${fileBase}.loader.js`;
+            const config = {
+                dataUrl: `${buildBasePath}/${fileBase}.data`,
+                frameworkUrl: `${buildBasePath}/${fileBase}.framework.js`,
+                codeUrl: `${buildBasePath}/${fileBase}.wasm`,
+                streamingAssetsUrl: 'StreamingAssets',
+                companyName: 'Dakota',
+                productName: 'Avatar',
+                productVersion: '1.0',
+                canvas: canvas,
+                showBanner: (msg, type) => console.log(`[Unity ${type || 'info'}]`, msg)
+            };
+
+            function bootstrapUnity() {
+                if (typeof createUnityInstance !== 'function') {
+                    console.warn('Unity loader script loaded but createUnityInstance is unavailable.');
+                    return;
+                }
+
+                createUnityInstance(canvas, config).then(instance => {
+                    window.unityInstance = instance;
+                    if (placeholder) {
+                        placeholder.style.display = 'none';
+                    }
+                    console.log('Dakota avatar Unity instance ready.');
+                }).catch(err => {
+                    console.error('Failed to initialize Unity avatar instance:', err);
+                });
+            }
+
+            const script = document.createElement('script');
+            script.src = loaderUrl;
+            script.async = true;
+            script.onload = bootstrapUnity;
+            script.onerror = () => {
+                console.info('Dakota avatar WebGL loader not found at', loaderUrl, '- leave placeholder visible.');
+            };
+
+            document.body.appendChild(script);
+        })();
+    </script>
 </body>
     </html>
