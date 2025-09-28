@@ -68,3 +68,20 @@ Thumbs.db
 # Build directories
 dist/
 build/
+
+# Unity project generated files
+VirtualDakota/[Ll]ibrary/
+VirtualDakota/[Tt]emp/
+VirtualDakota/[Oo]bj/
+VirtualDakota/[Bb]uild/
+VirtualDakota/[Bb]uilds/
+VirtualDakota/[Ll]ogs/
+VirtualDakota/[Uu]ser[Ss]ettings/
+VirtualDakota/[Mm]emoryCaptures/
+VirtualDakota/[Bb]ee/
+VirtualDakota/[Aa]rtifacts/
+VirtualDakota/[Pp]rofileData/
+VirtualDakota/WebGL Builds/
+VirtualDakota/*.csproj
+VirtualDakota/*.sln
+VirtualDakota/*.userprefs
