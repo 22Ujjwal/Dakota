@@ -453,9 +453,33 @@ function addChatMessage(message, sender) {
     chatMessages.appendChild(messageDiv);
     chatMessages.scrollTop = chatMessages.scrollHeight;
     
-    // Add typewriter effect for AI messages
+    // Avatar integration hooks
+    if (sender === 'user') {
+        // User speaking ends any AI speaking/typing state
+        if (window.AvatarController) {
+            try {
+                window.AvatarController.stopTyping?.();
+                window.AvatarController.stopSpeaking?.();
+                // Scan user message for triggers like thanks / goodbye
+                window.AvatarController.scanAndTrigger?.(message);
+            } catch (e) { console.warn('Avatar user hook error', e); }
+        }
+    }
+    
+    // Add typewriter effect & avatar compose lifecycle for AI messages
     if (sender === 'ai') {
-        typeWriterEffect(messageDiv.querySelector('.message-text'), message);
+        const el = messageDiv.querySelector('.message-text');
+        if (window.AvatarController) {
+            try { window.AvatarController.notifyAIComposeStart?.(); } catch(e){ console.warn('Avatar compose start error', e); }
+        }
+        typeWriterEffect(el, message, () => {
+            if (window.AvatarController) {
+                try {
+                    window.AvatarController.notifyAIComposeEnd?.();
+                    window.AvatarController.scanAndTrigger?.(message);
+                } catch(e){ console.warn('Avatar compose end error', e); }
+            }
+        });
     }
 }
 
@@ -468,19 +492,23 @@ function formatMessage(message) {
         .replace(/\n/g, '<br>');
 }
 
-function typeWriterEffect(element, text) {
+function typeWriterEffect(element, text, done) {
     element.innerHTML = '';
     let i = 0;
     const formattedText = formatMessage(text);
+    const total = formattedText.length;
     
     function type() {
-        if (i < formattedText.length) {
+        if (i < total) {
             element.innerHTML += formattedText.charAt(i);
             i++;
             setTimeout(type, 10);
+        } else {
+            if (typeof done === 'function') {
+                try { done(); } catch(e){ console.warn('typeWriterEffect callback error', e); }
+            }
         }
     }
-    
     type();
 }
 
