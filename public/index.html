@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dakota - Glassmorphic Assistant</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar glassmorphic-panel" id="sidebar">
+            <div class="sidebar-header">
+                <div class="avatar-panel" id="avatarPanel" role="region" aria-hidden="true" aria-labelledby="avatarPanelTitle">
+                    <div class="avatar-panel-content">
+                        <div class="avatar-panel-header">
+                            <span class="avatar-panel-title" id="avatarPanelTitle">Dakota Avatar</span>
+                            <button type="button" class="avatar-close-btn" id="avatarCloseBtn" aria-label="Close avatar viewer">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                        <div class="avatar-canvas-wrapper">
+                            <canvas id="avatarCanvas" width="626" height="351" aria-label="Dakota avatar canvas"></canvas>
+                            <div class="avatar-placeholder" id="avatarPlaceholder">
+                                <i class="fas fa-user-astronaut"></i>
+                                <span>Avatar preview coming soon</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="sidebar-logo-row">
+                    <div class="logo">
+                        <div class="logo-icon">
+                            <i class="far fa-star"></i>
+                        </div>
+                        <span class="logo-text">Dakota</span>
+                    </div>
+                    <button type="button" class="avatar-slide-toggle glassmorphic-button" id="avatarSlideToggle" aria-label="Toggle avatar viewer" aria-controls="avatarPanel" aria-expanded="false">
+                        <i class="far fa-user"></i>
+                    </button>
+                </div>
+
+                <button class="new-chat-btn glassmorphic-button" id="newChatBtn">
+                    <i class="fas fa-plus"></i>
+                    <span class="btn-text">New Chat</span>
+                </button>
+            </div>
+            
+            <div class="sidebar-content">
+                <div class="chat-history">
+                    <div class="history-item active">
+                        <i class="far fa-comment-dots"></i>
+                        <span>Current Session</span>
+                    </div>
+                </div>
+                
+                <div class="sidebar-footer">
+                    <div class="status-indicator">
+                        <div class="status-dot" id="connectionStatus"></div>
+                        <span id="statusText">Connected</span>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Minimized Sidebar Button -->
+        <button class="minimized-sidebar glassmorphic-button" id="minimizedSidebar" style="display: none;">
+            <i class="fas fa-bars"></i>
+        </button>
+
+        <!-- Main Chat Area -->
+        <main class="main-chat" id="mainChat">
+            <!-- Chat Header -->
+            <header class="chat-header glassmorphic-panel">
+                <button type="button" class="chat-header-title avatar-toggle" id="avatarToggleHeader" aria-label="Open Dakota avatar" aria-controls="avatarPanel" aria-expanded="false">
+                    <span class="chat-name">Dakota</span>
+                    <span class="chat-subtitle">AI Assistant</span>
+                </button>
+                <div class="header-actions">
+                    <button class="btn glassmorphic-button" id="exploreBtn">
+                        <i class="far fa-compass"></i>
+                        <span class="btn-text">Web Explore</span>
+                    </button>
+                    <button class="btn glassmorphic-button" id="settingsBtn">
+                        <i class="fas fa-cog"></i>
+                    </button>
+                </div>
+            </header>
+
+            <!-- Activity Status (Minimal) -->
+            <div class="activity-status glassmorphic-panel" id="activityContainer">
+                <div class="activity-current">
+                    <span class="activity-text">Ready to help</span>
+                    <button class="activity-toggle" onclick="toggleActivityDropdown()">
+                        <i class="fas fa-chevron-down"></i>
+                    </button>
+                </div>
+                <div class="activity-dropdown" id="activityDropdown" style="display: none;">
+                    <!-- Activity items will be populated here -->
+                </div>
+            </div>
+
+            <!-- Chat Messages -->
+            <div class="chat-messages" id="chatMessages">
+            </div>
+
+            <!-- Chat Input -->
+            <div class="chat-input-container glassmorphic-panel">
+                <div class="input-wrapper">
+                    <div class="input-container">
+                        <input type="text" id="chatInput" placeholder="Message Dakota..." autocomplete="off" spellcheck="false" />
+                        <button class="send-button glassmorphic-button" id="sendMessage">
+                            <i class="far fa-paper-plane"></i>
+                        </button>
+                    </div>
+                    
+                </div>
+            </div>
+        </main>
+
+        <!-- Browser View Area (Shows when Web Explore is active) -->
+        <div class="browser-view-area glassmorphic-panel" id="browserViewArea" style="display: none;">
+            <div class="browser-header">
+                <div class="browser-title">
+                    <i class="far fa-compass"></i>
+                    <span>Live Web Session</span>
+                </div>
+                <div class="browser-controls">
+                    <button class="btn glassmorphic-button" id="refreshBrowserBtn">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                    <button class="btn glassmorphic-button" id="fullscreenBrowserBtn">
+                        <i class="fas fa-expand"></i>
+                    </button>
+                    <button class="btn glassmorphic-button" id="closeBrowserBtn">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="browser-content">
+                <div id="browserView" class="browser-view">
+                    <div class="placeholder">
+                        <i class="far fa-compass"></i>
+                        <h3>Web Explore Mode</h3>
+                        <p>Send a message to start web automation</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Browser View Modal -->
+        <div class="browser-modal glassmorphic-overlay" id="browserModal">
+            <div class="modal-content glassmorphic-panel">
+                <div class="modal-header">
+                    <h3><i class="far fa-compass"></i> Live Browser View</h3>
+                    <div class="modal-controls">
+                        <button id="refreshBtn" class="btn glassmorphic-button">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+                        <button id="fullscreenBtn" class="btn glassmorphic-button">
+                            <i class="fas fa-expand"></i>
+                        </button>
+                        <button id="closeModal" class="btn glassmorphic-button">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="browser-container">
+                    <div id="browserView" class="browser-view">
+                        <div class="placeholder">
+                            <i class="far fa-compass"></i>
+                            <h3>Ready to Start</h3>
+                            <p>Ask Dyna to automate a web task to begin</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Status Indicator -->
+    <div id="statusIndicator" class="status-indicator glassmorphic-panel">
+        <div class="status-content">
+            <div class="status-icon">
+                <i class="far fa-circle"></i>
+            </div>
+            <span class="status-text">Ready</span>
+        </div>
+    </div>
+
+    <!-- Hidden elements for backward compatibility -->
+    <textarea id="taskInput" style="display: none;"></textarea>
+    <button id="startBtn" style="display: none;"></button>
+    <button id="screenshotBtn" style="display: none;"></button>
+    <button id="stopBtn" style="display: none;"></button>
+
+    <!-- Scripts -->
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="script.js"></script>
+</body>
+    </html>
