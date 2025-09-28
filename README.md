@@ -2,6 +2,9 @@
 
 **OpenAI Dakota** is the more sentient autonomy stack for the browser. It fuses OpenAI's multimodal reasoning with Browserbase cloud sessions, Playwright automation, realtime vision, and an expressive avatar so Dakota can see the page, act on it, and respond like a living teammate.
 
+
+![Graphic](vdakortaAvatar.png)
+
 ## 🌟 What makes Dakota different?
 - **OpenAI-native cognition:** GPT-4o (and friends) drive planning, grounding, and evaluation for every step Dakota takes.
 - **End-to-end web automation:** Browserbase + Playwright give Dakota resilient, observable browser sessions that are safe to share.
