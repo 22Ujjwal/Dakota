@@ -50,7 +50,7 @@
 - npm
 - Python 3.10+ (for the optional vision service)
 - Browserbase account + API key
-- OpenAI API key with access to GPT-4o or GPT-4 Turbo family models
+- OpenAI API key with access to GPT-5 family models
 
 ### 1. Clone the project
 ```bash
